@@ -24,6 +24,7 @@
 #include "core/psxemulator.h"
 #include "gpu/soft/interface.h"
 #include "gpu/soft/soft.h"
+#include "gui/gui.h"
 #include "imgui.h"
 #include "support/imgui-helpers.h"
 #include "tracy/Tracy.hpp"
@@ -83,6 +84,7 @@ int32_t PCSX::SoftGPU::impl::shutdown() {
 std::unique_ptr<PCSX::GPU> PCSX::GPU::getSoft() { return std::unique_ptr<PCSX::GPU>(new PCSX::SoftGPU::impl()); }
 
 void PCSX::SoftGPU::impl::updateDisplay(bool fromGui) {
+    if (!dynamic_cast<GUI *>(m_ui)) return;
     if (m_softDisplay.Disabled) {
         glClearColor(1, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -125,8 +127,10 @@ void PCSX::SoftGPU::impl::changeDispOffsetsX() {
 
             m_previousDisplay.Range.x1 += (int16_t)(lx - l);
         }
-        glClearColor(1, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        if (dynamic_cast<GUI *>(m_ui)) {
+            glClearColor(1, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
     }
 
     m_doVSyncUpdate = true;
@@ -171,8 +175,10 @@ void PCSX::SoftGPU::impl::changeDispOffsetsY() {
     }
 
     if (iO != m_previousDisplay.Range.y0) {
-        glClearColor(1, 0, 0, 0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        if (dynamic_cast<GUI *>(m_ui)) {
+            glClearColor(1, 0, 0, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
     }
 }
 
