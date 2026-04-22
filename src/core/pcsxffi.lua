@@ -65,6 +65,8 @@ bool breakpointEnabled(Breakpoint*);
 void removeBreakpoint(Breakpoint*);
 void pauseEmulator();
 void resumeEmulator();
+void stepIn();
+void runExecute();
 void softResetEmulator();
 void hardResetEmulator();
 void luaMessage(const char* msg, bool error);
@@ -90,6 +92,7 @@ void loadSaveStateFromFile(LuaFile*);
 LuaFile* getMemoryAsFile();
 
 void quit(int code);
+void startWebServer(int port);
 ]]
 
 local C = ffi.load 'PCSX'
@@ -184,6 +187,8 @@ PCSX = {
     addBreakpoint = addBreakpoint,
     pauseEmulator = function() C.pauseEmulator() end,
     resumeEmulator = function() C.resumeEmulator() end,
+    stepIn = function() C.stepIn() end,
+    runExecute = function() C.runExecute() end,
     softResetEmulator = function() C.softResetEmulator() end,
     hardResetEmulator = function() C.hardResetEmulator() end,
     invalidateCache = function() C.invalidateCache() end,
@@ -223,6 +228,7 @@ PCSX = {
     end,
     getMemoryAsFile = function() return Support.File._createFileWrapper(C.getMemoryAsFile()) end,
     quit = function(code) C.quit(code or 0) end,
+    startWebServer = function(port) C.startWebServer(port or 8080) end,
 }
 
 print = function(...) printLike(function(s) C.luaMessage(s, false) end, ...) end

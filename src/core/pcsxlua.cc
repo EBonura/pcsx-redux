@@ -25,6 +25,8 @@
 #include "core/psxmem.h"
 #include "core/r3000a.h"
 #include "core/sstate.h"
+#include "core/system.h"
+#include "core/web-server.h"
 #include "lua/luafile.h"
 #include "lua/luawrapper.h"
 
@@ -79,6 +81,14 @@ void removeBreakpoint(LuaBreakpoint* wrapper) {
 }
 void pauseEmulator() { PCSX::g_system->pause(); }
 void resumeEmulator() { PCSX::g_system->resume(); }
+void stepIn() { PCSX::g_emulator->m_debug->stepIn(); }
+
+// Invoke the CPU's Execute loop synchronously from Lua. With stepIn
+// having primed `m_step = STEP_IN`, Execute runs exactly one instruction
+// before the debug machinery pauses the system and Execute returns.
+// Without that priming, this blocks until something else (breakpoint,
+// exception, pause call) stops the emulator.
+void runExecute() { PCSX::g_emulator->m_cpu->Execute(); }
 void softResetEmulator() { PCSX::g_system->softReset(); }
 void hardResetEmulator() { PCSX::g_system->hardReset(); }
 void luaMessage(const char* msg, bool error) { PCSX::g_system->luaMessage(msg, error); }
@@ -123,6 +133,10 @@ PCSX::LuaFFI::LuaFile* getMemoryAsFile() {
 
 void quit(int code) { PCSX::g_system->quit(code); }
 
+void startWebServer(int port) {
+    PCSX::g_emulator->m_webServer->startServer(PCSX::g_system->getLoop(), port);
+}
+
 }  // namespace
 
 template <typename T, size_t S>
@@ -153,6 +167,8 @@ static void registerAllSymbols(PCSX::Lua L) {
     REGISTER(L, removeBreakpoint);
     REGISTER(L, pauseEmulator);
     REGISTER(L, resumeEmulator);
+    REGISTER(L, stepIn);
+    REGISTER(L, runExecute);
     REGISTER(L, softResetEmulator);
     REGISTER(L, hardResetEmulator);
     REGISTER(L, luaMessage);
@@ -166,6 +182,7 @@ static void registerAllSymbols(PCSX::Lua L) {
     REGISTER(L, loadSaveStateFromFile);
     REGISTER(L, getMemoryAsFile);
     REGISTER(L, quit);
+    REGISTER(L, startWebServer);
     L.settable();
     L.pop();
 }
