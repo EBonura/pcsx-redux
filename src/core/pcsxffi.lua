@@ -67,6 +67,8 @@ void pauseEmulator();
 void resumeEmulator();
 void stepIn();
 void runExecute();
+void setQuietPauseResume(bool quiet);
+bool isRunning();
 void softResetEmulator();
 void hardResetEmulator();
 void luaMessage(const char* msg, bool error);
@@ -189,6 +191,8 @@ PCSX = {
     resumeEmulator = function() C.resumeEmulator() end,
     stepIn = function() C.stepIn() end,
     runExecute = function() C.runExecute() end,
+    setQuietPauseResume = function(quiet) C.setQuietPauseResume(quiet) end,
+    isRunning = function() return C.isRunning() end,
     softResetEmulator = function() C.softResetEmulator() end,
     hardResetEmulator = function() C.hardResetEmulator() end,
     invalidateCache = function() C.invalidateCache() end,

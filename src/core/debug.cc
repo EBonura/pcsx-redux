@@ -287,8 +287,13 @@ bool PCSX::Debug::triggerBP(Breakpoint* bp, uint32_t address, unsigned width, co
     }
     if (g_system->running()) return keepBP;
     m_step = STEP_NONE;
-    g_system->printf(_("Breakpoint triggered: PC=0x%08x - Cause: %s %s\n"), pc, name, cause);
-    g_system->m_eventBus->signal(Events::GUI::JumpToPC{pc});
+    // Suppress per-step chatter (and the editor-focus event) when a
+    // harness has asked for quiet mode — otherwise every single-step
+    // spams stdout and floods the pipe buffer.
+    if (!g_system->isQuietPauseResume()) {
+        g_system->printf(_("Breakpoint triggered: PC=0x%08x - Cause: %s %s\n"), pc, name, cause);
+        g_system->m_eventBus->signal(Events::GUI::JumpToPC{pc});
+    }
     return keepBP;
 }
 

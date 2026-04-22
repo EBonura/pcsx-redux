@@ -140,7 +140,12 @@ void PCSX::Counters::reset(uint32_t index) {
 void PCSX::Counters::update() {
     const uint64_t cycle = PCSX::g_emulator->m_cpu->m_regs.cycle;
 
-    {
+    // The SPU sync path blocks on `waitForGoal`, which only returns
+    // when the audio backend advances. Headless harnesses that disable
+    // ExecutionFlow events never start the audio device, so this call
+    // hangs forever. Skip it in quiet mode — we're not producing audio
+    // for the user anyway.
+    if (!g_system->isQuietPauseResume()) {
         uint64_t prev = g_emulator->m_cpu->m_regs.previousCycles;
         uint64_t diff = cycle - prev;
         diff *= 4410000;

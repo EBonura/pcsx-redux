@@ -82,6 +82,8 @@ void removeBreakpoint(LuaBreakpoint* wrapper) {
 void pauseEmulator() { PCSX::g_system->pause(); }
 void resumeEmulator() { PCSX::g_system->resume(); }
 void stepIn() { PCSX::g_emulator->m_debug->stepIn(); }
+void setQuietPauseResume(bool quiet) { PCSX::g_system->setQuietPauseResume(quiet); }
+bool isRunning() { return PCSX::g_system->running(); }
 
 // Invoke the CPU's Execute loop synchronously from Lua. With stepIn
 // having primed `m_step = STEP_IN`, Execute runs exactly one instruction
@@ -169,6 +171,8 @@ static void registerAllSymbols(PCSX::Lua L) {
     REGISTER(L, resumeEmulator);
     REGISTER(L, stepIn);
     REGISTER(L, runExecute);
+    REGISTER(L, setQuietPauseResume);
+    REGISTER(L, isRunning);
     REGISTER(L, softResetEmulator);
     REGISTER(L, hardResetEmulator);
     REGISTER(L, luaMessage);

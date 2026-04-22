@@ -174,13 +174,21 @@ class System {
     [[gnu::cold]] void pause(bool exception = false) {
         if (!m_running) return;
         m_running = false;
+        if (m_quietPauseResume) return;
         m_eventBus->signal(Events::ExecutionFlow::Pause{exception});
     }
     void resume() {
         if (m_running) return;
         m_running = true;
+        if (m_quietPauseResume) return;
         m_eventBus->signal(Events::ExecutionFlow::Run{});
     }
+    // When quiet mode is enabled, pause()/resume() skip the
+    // ExecutionFlow::Run/Pause event emit. Used by headless harnesses
+    // to avoid per-step audio-device start/stop overhead (ma_device_start
+    // on macOS CoreAudio is ~40ms, which dominates parity-test runtime).
+    void setQuietPauseResume(bool quiet) { m_quietPauseResume = quiet; }
+    bool isQuietPauseResume() const { return m_quietPauseResume; }
     virtual void testQuit(int code) = 0;
     // This needs to only mutate variables, as it requires to be signal-safe.
     [[gnu::cold]] void quit(int code = 0) {
@@ -264,6 +272,7 @@ class System {
     // is refreshed is by calling update() periodically, so this boolean affects
     // the moment when and how update() is called.
     bool m_running = false;
+    bool m_quietPauseResume = false;
     // If true, indicates that the emulator is quitting. This can be set by a
     // number of events, including the user pressing the quit button or the
     // emulator itself requesting a quit due to testing for instance. This will
