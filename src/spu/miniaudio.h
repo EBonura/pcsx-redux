@@ -89,6 +89,7 @@ class MiniAudio {
                 return false;
         }
     }
+    ma_uint32 drainMixedFrames(Frame* output, ma_uint32 frameCount);
     uint32_t getCurrentFrames() { return m_frames.load(); }
     void waitForGoal(uint32_t goal) {
 #if HAS_ATOMIC_WAIT

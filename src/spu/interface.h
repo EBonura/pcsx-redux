@@ -85,6 +85,9 @@ class impl final : public SPUInterface {
     }
     uint32_t getCurrentFrames() override { return m_audioOut.getCurrentFrames(); }
     void waitForGoal(uint32_t goal) override { m_audioOut.waitForGoal(goal); }
+    uint32_t drainMixedFrames(int16_t* output, uint32_t maxFrames) {
+        return m_audioOut.drainMixedFrames(reinterpret_cast<MiniAudio::Frame*>(output), maxFrames);
+    }
 
   private:
     struct ADSRFlags {

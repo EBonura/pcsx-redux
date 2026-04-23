@@ -24,11 +24,13 @@
 #include "core/psxemulator.h"
 #include "core/psxmem.h"
 #include "core/r3000a.h"
+#include "core/spu.h"
 #include "core/sstate.h"
 #include "core/system.h"
 #include "core/web-server.h"
 #include "lua/luafile.h"
 #include "lua/luawrapper.h"
+#include "spu/interface.h"
 
 namespace {
 
@@ -100,6 +102,13 @@ void jumpToMemory(uint32_t address, unsigned width) {
     PCSX::g_system->m_eventBus->signal(PCSX::Events::GUI::JumpToMemory{address, width});
 }
 void invalidateCache() { PCSX::g_emulator->m_cpu->invalidateCache(); }
+uint32_t drainAudioFrames(int16_t* output, uint32_t maxFrames) {
+    auto* spu = dynamic_cast<PCSX::SPU::impl*>(PCSX::g_emulator->m_spu.get());
+    if (!spu) {
+        return 0;
+    }
+    return spu->drainMixedFrames(output, maxFrames);
+}
 
 struct LuaScreenShot {
     PCSX::Slice* data;
@@ -180,6 +189,7 @@ static void registerAllSymbols(PCSX::Lua L) {
     REGISTER(L, jumpToPC);
     REGISTER(L, jumpToMemory);
     REGISTER(L, invalidateCache);
+    REGISTER(L, drainAudioFrames);
     REGISTER(L, takeScreenShot);
     REGISTER(L, createSaveState);
     REGISTER(L, loadSaveStateFromSlice);

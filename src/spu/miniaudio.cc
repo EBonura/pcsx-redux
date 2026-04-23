@@ -19,6 +19,7 @@
 
 #include "spu/miniaudio.h"
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 
@@ -176,6 +177,61 @@ void PCSX::SPU::MiniAudio::maybeRestart() {
     if (ma_device_start(&m_deviceNull) != MA_SUCCESS) {
         throw std::runtime_error("Unable to start NULL audio device");
     }
+}
+
+ma_uint32 PCSX::SPU::MiniAudio::drainMixedFrames(Frame* output, ma_uint32 frameCount) {
+    const bool mono = m_settings.get<Mono>();
+    const bool muted = m_settings.get<Mute>();
+    ma_uint32 total = 0;
+
+    while (frameCount > 0) {
+        const ma_uint32 batch = std::min<ma_uint32>(frameCount, VoiceStream::BUFFER_SIZE);
+        std::array<Buffer, STREAMS> buffers{};
+        std::array<size_t, STREAMS> counts{};
+        ma_uint32 available = 0;
+
+        for (unsigned i = 0; i < STREAMS; i++) {
+            counts[i] = i == 0 ? m_voicesStream.dequeue(buffers[i].data(), batch)
+                               : m_audioStream.dequeue(buffers[i].data(), batch);
+            available = std::max(available, static_cast<ma_uint32>(counts[i]));
+        }
+
+        if (available == 0) break;
+
+        for (ma_uint32 f = 0; f < available; f++) {
+            int32_t l = 0;
+            int32_t r = 0;
+            if (!muted) {
+                for (unsigned i = 0; i < STREAMS; i++) {
+                    if (f < counts[i]) {
+                        l += buffers[i][f].L;
+                        r += buffers[i][f].R;
+                    }
+                }
+            }
+
+            if (mono) {
+                const int16_t lr = std::clamp((l + r) / 2, static_cast<int32_t>(std::numeric_limits<int16_t>::min()),
+                                              static_cast<int32_t>(std::numeric_limits<int16_t>::max()));
+                output[total + f] = {.L = lr, .R = lr};
+            } else {
+                output[total + f] = {
+                    .L = static_cast<int16_t>(std::clamp(
+                        l, static_cast<int32_t>(std::numeric_limits<int16_t>::min()),
+                        static_cast<int32_t>(std::numeric_limits<int16_t>::max()))),
+                    .R = static_cast<int16_t>(std::clamp(
+                        r, static_cast<int32_t>(std::numeric_limits<int16_t>::min()),
+                        static_cast<int32_t>(std::numeric_limits<int16_t>::max()))),
+                };
+            }
+        }
+
+        total += available;
+        frameCount -= available;
+        if (available < batch) break;
+    }
+
+    return total;
 }
 
 void PCSX::SPU::MiniAudio::callback(ma_device* device, float* output, ma_uint32 frameCount) {

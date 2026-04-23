@@ -76,6 +76,7 @@ void luaLog(const char* msg);
 void jumpToPC(uint32_t address);
 void jumpToMemory(uint32_t address, unsigned width);
 void invalidateCache();
+uint32_t drainAudioFrames(int16_t* output, uint32_t maxFrames);
 
 typedef enum { BPP_16, BPP_24 } ScreenShotBPP;
 
@@ -196,6 +197,7 @@ PCSX = {
     softResetEmulator = function() C.softResetEmulator() end,
     hardResetEmulator = function() C.hardResetEmulator() end,
     invalidateCache = function() C.invalidateCache() end,
+    drainAudioFrames = function(output, maxFrames) return C.drainAudioFrames(output, maxFrames) end,
     log = function(...) printLike(function(msg) C.luaLog(msg .. '\n') end, ...) end,
     GUI = { jumpToPC = jumpToPC, jumpToMemory = jumpToMemory },
     nextTick = function(f)
